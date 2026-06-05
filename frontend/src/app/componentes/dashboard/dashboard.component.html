@@ -1,0 +1,80 @@
+<div class="contenedor">
+  <header>
+    <h1>🐝 Honeypot API</h1>
+    <p class="sub">Monitoreo de intentos de ataque en tiempo real</p>
+  </header>
+
+  <!-- Estadísticas -->
+  <section class="tarjetas">
+    <div class="tarjeta total">
+      <span class="numero">{{ estadisticas.total }}</span>
+      <span class="etiqueta">Total ataques</span>
+    </div>
+    <div class="tarjeta ip">
+      <span class="numero">{{ estadisticas.porIp.length }}</span>
+      <span class="etiqueta">IPs distintas</span>
+    </div>
+    <div class="tarjeta endpoint">
+      <span class="numero">{{ estadisticas.porEndpoint.length }}</span>
+      <span class="etiqueta">Endpoints atacados</span>
+    </div>
+  </section>
+
+  <!-- Simular -->
+  <section class="simular">
+    <h3>Simular ataque</h3>
+    <div class="botones">
+      <button (click)="simular('sql')">SQL Injection</button>
+      <button (click)="simular('xss')">XSS</button>
+      <button (click)="simular('brute')">Fuerza Bruta</button>
+      <button (click)="simular('noauth')">Sin Auth</button>
+      <button (click)="simular('otro')">Otro</button>
+    </div>
+  </section>
+
+  <!-- Último ataque -->
+  <section class="ultimo" *ngIf="ultimoAtaque">
+    <h3>⚠️ Último ataque detectado</h3>
+    <div class="alerta" [class]="severidadClase(ultimoAtaque.severidad)">
+      <div class="alerta-header">
+        <span class="tipo">{{ tipoEtiqueta(ultimoAtaque.tipo) }}</span>
+        <span class="severidad-badge">{{ ultimoAtaque.severidad }}</span>
+      </div>
+      <div class="alerta-cuerpo">
+        <div><strong>IP:</strong> {{ ultimoAtaque.ip }}</div>
+        <div><strong>Endpoint:</strong> {{ ultimoAtaque.endpoint }}</div>
+        <div><strong>Payload:</strong> <code>{{ ultimoAtaque.payload }}</code></div>
+        <div><strong>Hora:</strong> {{ ultimoAtaque.timestamp | date:'HH:mm:ss' }}</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Historial -->
+  <section class="historial">
+    <h3>Historial de ataques</h3>
+    <div class="tabla-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Hora</th>
+            <th>Tipo</th>
+            <th>Severidad</th>
+            <th>IP</th>
+            <th>Endpoint</th>
+            <th>Payload</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let a of ataques" class="fila" [class]="severidadClase(a.severidad)">
+            <td>{{ a.timestamp | date:'HH:mm:ss' }}</td>
+            <td>{{ tipoEtiqueta(a.tipo) }}</td>
+            <td><span class="badge" [class]="severidadClase(a.severidad)">{{ a.severidad }}</span></td>
+            <td>{{ a.ip }}</td>
+            <td>{{ a.endpoint }}</td>
+            <td><code>{{ a.payload.slice(0, 40) }}{{ a.payload.length > 40 ? '…' : '' }}</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
