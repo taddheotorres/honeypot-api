@@ -22,3 +22,6 @@ Thumbs.db
 
 # Angular cache
 .angular/
+
+# opencode local config
+.opencode/
