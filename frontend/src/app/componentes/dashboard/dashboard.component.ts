@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { NgIf, NgFor, DatePipe } from '@angular/common';
 import { AtaqueService } from '../../servicios/ataque.service';
 import { WebSocketService } from '../../servicios/websocket.service';
 import { Ataque } from '../../modelos/ataque.model';
@@ -8,7 +8,7 @@ import { Subscription } from 'rxjs';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [NgIf, NgFor, DatePipe],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
