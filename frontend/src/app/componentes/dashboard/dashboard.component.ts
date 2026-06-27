@@ -1,12 +1,13 @@
 import { Component } from '@angular/core';
 import { NgIf, NgFor, DatePipe } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { AtaqueService } from '../../servicios/ataque.service';
 import { Ataque } from '../../modelos/ataque.model';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [NgIf, NgFor, DatePipe],
+  imports: [NgIf, NgFor, DatePipe, RouterLink],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
