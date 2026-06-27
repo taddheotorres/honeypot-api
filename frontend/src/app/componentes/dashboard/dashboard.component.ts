@@ -1,9 +1,7 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component } from '@angular/core';
 import { NgIf, NgFor, DatePipe } from '@angular/common';
 import { AtaqueService } from '../../servicios/ataque.service';
-import { WebSocketService } from '../../servicios/websocket.service';
 import { Ataque } from '../../modelos/ataque.model';
-import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-dashboard',
@@ -12,43 +10,17 @@ import { Subscription } from 'rxjs';
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
-export class DashboardComponent implements OnInit, OnDestroy {
+export class DashboardComponent {
   ataques: Ataque[] = [];
   ultimoAtaque: Ataque | null = null;
   estadisticas: any = { total: 0, porTipo: [], porIp: [], porEndpoint: [] };
   error: string | null = null;
-  private subs: Subscription[] = [];
 
   constructor(
-    private ataqueService: AtaqueService,
-    private ws: WebSocketService
-  ) {}
-
-  ngOnInit() {
-    try {
-      this.cargarHistorial();
-      this.cargarEstadisticas();
-      this.ws.conectar();
-
-      this.subs.push(
-        this.ws.ataqueSubject.subscribe(a => {
-          this.ultimoAtaque = a;
-          this.ataques.unshift(a);
-          if (this.ataques.length > 100) this.ataques.pop();
-        })
-      );
-
-      this.subs.push(
-        this.ws.estadisticasSubject.subscribe(e => this.estadisticas = e)
-      );
-    } catch (e: any) {
-      this.error = e?.message || String(e);
-    }
-  }
-
-  ngOnDestroy() {
-    this.subs.forEach(s => s.unsubscribe());
-    this.ws.desconectar();
+    private ataqueService: AtaqueService
+  ) {
+    this.cargarHistorial();
+    this.cargarEstadisticas();
   }
 
   cargarHistorial() {
