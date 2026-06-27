@@ -1,59 +1,25 @@
 services:
-  db:
-    image: postgres:17-alpine
-    env_file: .env
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-honeypot}
-      POSTGRES_USER: ${POSTGRES_USER:-honeypot}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-honeypot}"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-    networks:
-      - honeypot-net
-
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    env_file: .env
     environment:
       SPRING_PROFILES_ACTIVE: prod
-      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:postgresql://db:5432/honeypot}
-      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-honeypot}
-      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-changeme}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://${PGHOST}:${PGPORT}/${PGDATABASE}
+      SPRING_DATASOURCE_USERNAME: ${PGUSER}
+      SPRING_DATASOURCE_PASSWORD: ${PGPASSWORD}
     ports:
-      - "8080:8080"
-    depends_on:
-      db:
-        condition: service_healthy
+      - "8080"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 30s
-    networks:
-      - honeypot-net
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "80:80"
-    depends_on:
-      - backend
-    networks:
-      - honeypot-net
-
-volumes:
-  pgdata:
-
-networks:
-  honeypot-net:
-    driver: bridge
+      - "80"
