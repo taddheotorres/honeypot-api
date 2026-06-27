@@ -19,6 +19,7 @@
             "outputPath": {
               "base": "dist/honeypot-frontend"
             },
+            "polyfills": ["zone.js"],
             "browser": "src/main.ts",
             "tsConfig": "tsconfig.app.json",
             "assets": [
