@@ -8,47 +8,74 @@ import { AtaqueService } from '../../servicios/ataque.service';
   standalone: true,
   imports: [NgIf, NgFor, RouterLink],
   template: `
-    <div class="contenedor">
-      <header>
-        <h1>Diagnostico</h1>
-        <p class="sub"><a routerLink="/dashboard" style="color:#89b4fa">&larr; Volver al dashboard</a></p>
+    <div class="diag">
+      <header class="topbar">
+        <div class="topbar-left">
+          <h1 class="logo">HONEYPOT::DIAGNOSTICO</h1>
+          <a routerLink="/dashboard" class="nav-link">&larr; dashboard</a>
+        </div>
+        <div class="topbar-right">
+          <span class="stat-item">ultima actualizacion: <strong>{{ ultimaActualizacion }}</strong></span>
+          <button (click)="refrescar()" class="btn-refresh">REFRESCAR</button>
+        </div>
       </header>
 
-      <section class="tarjetas">
-        <div class="tarjeta total">
-          <span class="numero">{{ salud?.status || '?' }}</span>
-          <span class="etiqueta">API Status</span>
+      <div *ngIf="error" class="error-bar">{{ error }}</div>
+
+      <!-- Stats principales -->
+      <section class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-led" [class.led-green]="salud?.status === 'UP'" [class.led-red]="salud?.status !== 'UP'"></div>
+          <div class="stat-body">
+            <span class="stat-val">{{ salud?.status || '...' }}</span>
+            <span class="stat-lbl">API Health</span>
+          </div>
         </div>
-        <div class="tarjeta ip">
-          <span class="numero">{{ totalAtaques }}</span>
-          <span class="etiqueta">Ataques registrados</span>
+        <div class="stat-card">
+          <div class="stat-body">
+            <span class="stat-val">{{ totalAtaques }}</span>
+            <span class="stat-lbl">Ataques totales</span>
+          </div>
         </div>
-        <div class="tarjeta endpoint">
-          <span class="numero">{{ error ? 'Error' : 'OK' }}</span>
-          <span class="etiqueta">Ultima consulta</span>
+        <div class="stat-card">
+          <div class="stat-body">
+            <span class="stat-val">{{ endpoints.filter(e => e.ok).length }}/{{ endpoints.length }}</span>
+            <span class="stat-lbl">Endpoints OK</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-body">
+            <span class="stat-val" [class.text-green]="!error" [class.text-red]="error">{{ error ? 'ERROR' : 'OK' }}</span>
+            <span class="stat-lbl">Sistema</span>
+          </div>
         </div>
       </section>
 
-      <div *ngIf="error" style="background:#1e1e2e;border:2px solid #f38ba8;color:#f38ba8;padding:1rem;margin:1rem 0;border-radius:8px">
-        <strong>Error:</strong> {{ error }}
-      </div>
-
-      <section class="endpoints" *ngIf="!error">
-        <h3>Endpoint Health</h3>
-        <div class="tabla-wrapper">
+      <!-- Tabla de health checks -->
+      <section class="health-section">
+        <h3 class="section-title">ENDPOINT HEALTH</h3>
+        <div class="table-wrap">
           <table>
             <thead>
               <tr>
                 <th>Endpoint</th>
                 <th>Metodo</th>
-                <th>Estado</th>
+                <th>Status</th>
+                <th>Codigo</th>
+                <th>Tiempo</th>
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let e of endpoints">
-                <td>{{ e.path }}</td>
-                <td>{{ e.metodo }}</td>
-                <td><span class="badge" [class]="e.ok ? 'baja' : 'critica'">{{ e.ok ? 'OK' : 'Fallo' }}</span></td>
+              <tr *ngFor="let e of endpoints" class="row-check">
+                <td class="td-path">{{ e.path }}</td>
+                <td class="td-method">{{ e.metodo }}</td>
+                <td>
+                  <span class="status-badge" [class.ok]="e.ok" [class.fail]="!e.ok">
+                    {{ e.ok ? 'ONLINE' : 'OFFLINE' }}
+                  </span>
+                </td>
+                <td class="td-code" [class.text-green]="e.ok" [class.text-red]="!e.ok">{{ e.code || '--' }}</td>
+                <td class="td-time">{{ e.tiempo || '--' }}</td>
               </tr>
             </tbody>
           </table>
@@ -57,83 +84,129 @@ import { AtaqueService } from '../../servicios/ataque.service';
     </div>
   `,
   styles: [`
-    .contenedor { max-width: 1280px; margin: 0 auto; padding: 2rem 1.5rem; }
-    header { margin-bottom: 2rem; text-align: center; }
-    header h1 { font-size: 2.2rem; color: #89b4fa; letter-spacing: 2px; }
-    header .sub { color: #6c7086; font-size: 0.9rem; }
-    .tarjetas {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 1rem;
-      margin-bottom: 2rem;
+    .diag {
+      min-height: 100vh;
+      background: #05050a;
+      color: #c0caf5;
+      font-family: 'JetBrains Mono', 'Courier New', monospace;
+      padding: 1rem;
     }
-    .tarjeta {
-      background: #11111b;
-      border: 1px solid #313244;
-      border-radius: 10px;
-      padding: 1.5rem;
-      text-align: center;
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      background: #0a0a14; border: 1px solid #1a1a2e; border-radius: 6px; padding: 0.6rem 1rem; margin-bottom: 1rem;
     }
-    .tarjeta .numero { font-size: 2.4rem; font-weight: 700; display: block; }
-    .tarjeta .etiqueta { color: #6c7086; font-size: .8rem; text-transform: uppercase; letter-spacing: 1px; }
-    .tarjeta.total .numero { color: #89b4fa; }
-    .tarjeta.ip .numero { color: #a6e3a1; }
-    .tarjeta.endpoint .numero { color: #f9e2af; }
-    .endpoints h3 { margin-bottom: 1rem; color: #bac2de; }
-    .tabla-wrapper {
-      overflow-x: auto;
-      border: 1px solid #313244;
-      border-radius: 8px;
-      background: #11111b;
+    .topbar-left { display: flex; align-items: center; gap: 1rem; }
+    .logo {
+      font-size: 1rem; font-weight: 700; letter-spacing: 3px; color: #7aa2f7;
+      text-shadow: 0 0 6px rgba(122,162,247,0.2); margin: 0;
     }
-    table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+    .nav-link { color: #3b4261; font-size: 0.7rem; text-decoration: none; letter-spacing: 1px; }
+    .nav-link:hover { color: #c0caf5; }
+    .topbar-right { display: flex; align-items: center; gap: 1rem; }
+    .stat-item { font-size: 0.65rem; color: #3b4261; }
+    .stat-item strong { color: #565f89; }
+    .btn-refresh {
+      background: transparent; border: 1px solid #1a1a2e; color: #565f89;
+      font-family: inherit; font-size: 0.6rem; padding: 0.3rem 0.6rem; border-radius: 3px;
+      cursor: pointer; letter-spacing: 2px;
+    }
+    .btn-refresh:hover { border-color: #7aa2f7; color: #7aa2f7; }
+    .error-bar {
+      background: #1a0a0a; border: 1px solid #ff0040; color: #ff0040;
+      padding: 0.5rem 1rem; border-radius: 4px; font-size: 0.78rem; margin-bottom: 1rem;
+    }
+
+    .stats-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.8rem; margin-bottom: 1rem;
+    }
+    .stat-card {
+      background: #0a0a14; border: 1px solid #1a1a2e; border-radius: 6px; padding: 1rem;
+      display: flex; align-items: center; gap: 0.8rem;
+    }
+    .stat-led {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+      animation: pulse-led 2s infinite;
+    }
+    .stat-body { display: flex; flex-direction: column; }
+    .stat-val { font-size: 1.3rem; font-weight: 700; color: #c0caf5; }
+    .stat-lbl { font-size: 0.6rem; color: #3b4261; letter-spacing: 1px; }
+    .text-green { color: #00ff41; }
+    .text-red { color: #ff0040; }
+
+    .health-section {
+      background: #0a0a14; border: 1px solid #1a1a2e; border-radius: 6px; padding: 0.8rem;
+    }
+    .section-title {
+      font-size: 0.7rem; letter-spacing: 3px; color: #3b4261; margin: 0 0 0.6rem 0; font-weight: 600;
+    }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.72rem; }
     th {
-      text-align: left;
-      padding: .7rem .8rem;
-      background: #181825;
-      color: #6c7086;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      font-size: .7rem;
-      border-bottom: 1px solid #313244;
+      text-align: left; padding: 0.5rem 0.6rem; background: #05050a; color: #3b4261;
+      letter-spacing: 1px; font-size: 0.6rem; border-bottom: 1px solid #12121e;
     }
-    td { padding: .6rem .8rem; border-bottom: 1px solid #232434; }
-    .badge { font-size: .7rem; padding: 2px 7px; border-radius: 3px; font-weight: 600; }
-    .badge.baja { color: #a6e3a1; background: #1a2e1a; }
-    .badge.critica { color: #f38ba8; background: #2e1a1a; }
+    td { padding: 0.5rem 0.6rem; border-bottom: 1px solid #0d0d18; }
+    .row-check:hover { background: rgba(255,255,255,0.02); }
+    .td-path { color: #565f89; font-family: 'Courier New', monospace; font-size: 0.68rem; }
+    .td-method { color: #3b4261; }
+    .td-code { font-weight: 600; }
+    .td-time { color: #3b4261; font-size: 0.65rem; }
+    .status-badge {
+      font-size: 0.55rem; letter-spacing: 2px; padding: 2px 6px; border-radius: 2px; font-weight: 700;
+    }
+    .status-badge.ok { background: #0a1a0a; color: #00ff41; border: 1px solid #00ff41; }
+    .status-badge.fail { background: #1a0a0a; color: #ff0040; border: 1px solid #ff0040; }
+
+    @keyframes pulse-led {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
   `]
 })
 export class DiagnosticoComponent implements OnInit {
   salud: any = null;
   totalAtaques = 0;
   error: string | null = null;
+  ultimaActualizacion = '';
   endpoints = [
-    { path: '/api/ataques', metodo: 'GET', ok: false },
-    { path: '/api/ataques/estadisticas', metodo: 'GET', ok: false },
-    { path: '/actuator/health', metodo: 'GET', ok: false },
+    { path: '/actuator/health', metodo: 'GET', ok: false, code: null as number | null, tiempo: null as string | null },
+    { path: '/api/ataques', metodo: 'GET', ok: false, code: null as number | null, tiempo: null as string | null },
+    { path: '/api/ataques/estadisticas', metodo: 'GET', ok: false, code: null as number | null, tiempo: null as string | null },
+    { path: '/api/simular?tipo=test', metodo: 'POST', ok: false, code: null as number | null, tiempo: null as string | null },
   ];
 
   constructor(private api: AtaqueService) {}
 
   ngOnInit() {
-    this.verificarEndpoint('/actuator/health', 'GET', 0);
-    this.api.listar().subscribe({
-      next: a => { this.totalAtaques = a.length; this.endpoints[1].ok = true; },
-      error: () => this.endpoints[1].ok = false
-    });
-    fetch('/api/ataques/estadisticas').then(r => {
-      if (r.ok) this.endpoints[2].ok = true;
-    }).catch(() => {});
+    this.refrescar();
   }
 
-  verificarEndpoint(path: string, metodo: string, idx: number) {
-    fetch(path, { method: metodo })
-      .then(r => {
-        this.endpoints[idx].ok = r.ok;
-        if (path === '/actuator/health') return r.json();
-        return null;
-      })
-      .then(d => { if (d) this.salud = d; })
-      .catch(() => this.endpoints[idx].ok = false);
+  refrescar() {
+    this.verificarEndpoint(0);
+    this.verificarEndpoint(1);
+    this.verificarEndpoint(2);
+    this.verificarEndpoint(3);
+    this.api.listar().subscribe({
+      next: a => { this.totalAtaques = a.length; },
+      error: () => {}
+    });
+  }
+
+  async verificarEndpoint(idx: number) {
+    const e = this.endpoints[idx];
+    const inicio = performance.now();
+    try {
+      const res = await fetch(e.path, { method: e.metodo });
+      e.code = res.status;
+      e.ok = res.ok;
+      if (e.path === '/actuator/health' && res.ok) {
+        this.salud = await res.json();
+      }
+    } catch {
+      e.ok = false;
+      e.code = null;
+    }
+    e.tiempo = (performance.now() - inicio).toFixed(0) + 'ms';
+    this.ultimaActualizacion = new Date().toLocaleTimeString();
   }
 }
