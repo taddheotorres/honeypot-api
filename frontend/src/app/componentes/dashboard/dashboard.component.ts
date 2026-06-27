@@ -16,6 +16,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   ataques: Ataque[] = [];
   ultimoAtaque: Ataque | null = null;
   estadisticas: any = { total: 0, porTipo: [], porIp: [], porEndpoint: [] };
+  error: string | null = null;
   private subs: Subscription[] = [];
 
   constructor(
@@ -24,21 +25,25 @@ export class DashboardComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    this.cargarHistorial();
-    this.cargarEstadisticas();
-    this.ws.conectar();
+    try {
+      this.cargarHistorial();
+      this.cargarEstadisticas();
+      this.ws.conectar();
 
-    this.subs.push(
-      this.ws.ataqueSubject.subscribe(a => {
-        this.ultimoAtaque = a;
-        this.ataques.unshift(a);
-        if (this.ataques.length > 100) this.ataques.pop();
-      })
-    );
+      this.subs.push(
+        this.ws.ataqueSubject.subscribe(a => {
+          this.ultimoAtaque = a;
+          this.ataques.unshift(a);
+          if (this.ataques.length > 100) this.ataques.pop();
+        })
+      );
 
-    this.subs.push(
-      this.ws.estadisticasSubject.subscribe(e => this.estadisticas = e)
-    );
+      this.subs.push(
+        this.ws.estadisticasSubject.subscribe(e => this.estadisticas = e)
+      );
+    } catch (e: any) {
+      this.error = e?.message || String(e);
+    }
   }
 
   ngOnDestroy() {
@@ -47,11 +52,17 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   cargarHistorial() {
-    this.ataqueService.listar().subscribe(a => this.ataques = a);
+    this.ataqueService.listar().subscribe({
+      next: a => this.ataques = a,
+      error: e => this.error = 'Error al cargar historial: ' + e?.message
+    });
   }
 
   cargarEstadisticas() {
-    this.ataqueService.estadisticas().subscribe(e => this.estadisticas = e);
+    this.ataqueService.estadisticas().subscribe({
+      next: e => this.estadisticas = e,
+      error: e => this.error = 'Error al cargar estadísticas: ' + e?.message
+    });
   }
 
   simular(tipo: string) {
