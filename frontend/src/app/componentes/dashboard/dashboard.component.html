@@ -1,87 +1,110 @@
-<div class="contenedor">
-  <header>
-    <h1>🐝 Honeypot API</h1>
-    <p class="sub">Monitoreo de intentos de ataque en tiempo real</p>
-    <nav style="margin-top:1rem">
-      <a routerLink="/diagnostico" style="color:#89b4fa;text-decoration:none;font-size:.9rem">Diagnostico</a>
-    </nav>
+<div class="dashboard">
+  <!-- Header -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <h1 class="logo">HONEYPOT::ALLSAFE</h1>
+      <span class="version">v1.0</span>
+    </div>
+    <div class="topbar-center">
+      <span class="status-led" [class.led-green]="estadoSistema === 'OPERATIVO'" [class.led-red]="estadoSistema !== 'OPERATIVO'"></span>
+      <span class="status-text" [class.text-green]="estadoSistema === 'OPERATIVO'" [class.text-red]="estadoSistema !== 'OPERATIVO'">{{ estadoSistema }}</span>
+    </div>
+    <div class="topbar-right">
+      <span class="stat-item">ataques: <strong>{{ totalAtaques }}</strong></span>
+      <span class="stat-item">servidores: <strong>{{ servidores.length }}</strong></span>
+      <a routerLink="/diagnostico" class="nav-link">diagnostico</a>
+    </div>
   </header>
 
-  <div *ngIf="error" style="background:#1e1e2e;border:2px solid #f38ba8;color:#f38ba8;padding:1rem;margin:1rem 0;border-radius:8px">
-    <strong>ERROR:</strong> {{ error }}
-  </div>
+  <!-- Error -->
+  <div *ngIf="error" class="error-bar">{{ error }}</div>
 
-  <!-- Estadísticas -->
-  <section class="tarjetas">
-    <div class="tarjeta total">
-      <span class="numero">{{ estadisticas.total }}</span>
-      <span class="etiqueta">Total ataques</span>
-    </div>
-    <div class="tarjeta ip">
-      <span class="numero">{{ estadisticas.porIp.length }}</span>
-      <span class="etiqueta">IPs distintas</span>
-    </div>
-    <div class="tarjeta endpoint">
-      <span class="numero">{{ estadisticas.porEndpoint.length }}</span>
-      <span class="etiqueta">Endpoints atacados</span>
-    </div>
-  </section>
-
-  <!-- Simular -->
-  <section class="simular">
-    <h3>Simular ataque</h3>
-    <div class="botones">
-      <button (click)="simular('sql')">SQL Injection</button>
-      <button (click)="simular('xss')">XSS</button>
-      <button (click)="simular('brute')">Fuerza Bruta</button>
-      <button (click)="simular('noauth')">Sin Auth</button>
-      <button (click)="simular('otro')">Otro</button>
-    </div>
-  </section>
-
-  <!-- Último ataque -->
-  <section class="ultimo" *ngIf="ultimoAtaque">
-    <h3>⚠️ Último ataque detectado</h3>
-    <div class="alerta" [class]="severidadClase(ultimoAtaque.severidad)">
-      <div class="alerta-header">
-        <span class="tipo">{{ tipoEtiqueta(ultimoAtaque.tipo) }}</span>
-        <span class="severidad-badge">{{ ultimoAtaque.severidad }}</span>
+  <!-- Grid de servidores -->
+  <main class="grid">
+    <div *ngFor="let sv of servidores" class="servidor-card"
+         [class.comprometido]="sv.estado === 'COMPROMETIDO'"
+         [class.atencion]="sv.estado === 'ATENCION'"
+         [class.seguro]="sv.estado === 'SEGURO'"
+         [class.parpadeando]="sv.parpadeando">
+      <div class="card-header">
+        <span class="card-led" [class.led-green]="sv.estado === 'SEGURO'" [class.led-yellow]="sv.estado === 'ATENCION'" [class.led-red]="sv.estado === 'COMPROMETIDO'"></span>
+        <span class="card-nombre">{{ sv.nombre }}</span>
       </div>
-      <div class="alerta-cuerpo">
-        <div><strong>IP:</strong> {{ ultimoAtaque.ip }}</div>
-        <div><strong>Endpoint:</strong> {{ ultimoAtaque.endpoint }}</div>
-        <div><strong>Payload:</strong> <code>{{ ultimoAtaque.payload }}</code></div>
-        <div><strong>Hora:</strong> {{ ultimoAtaque.timestamp | date:'HH:mm:ss' }}</div>
+      <div class="card-body">
+        <div class="card-info">
+          <div class="card-endpoint">{{ sv.endpoint }}</div>
+          <div class="card-ip">{{ sv.ip }}</div>
+        </div>
+        <div class="card-stats">
+          <div class="stat">
+            <span class="stat-num">{{ sv.ataques }}</span>
+            <span class="stat-label">ataques</span>
+          </div>
+          <div class="stat">
+            <span class="stat-num">{{ sv.ultimoAtaque?.severidad || '--' }}</span>
+            <span class="stat-label">severidad</span>
+          </div>
+        </div>
+        <div class="card-badge" *ngIf="sv.estado !== 'SEGURO'">
+          <span class="badge-text">{{ sv.estado }}</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <span class="card-tipo">{{ sv.tipo }}</span>
+        <span class="card-update" *ngIf="sv.ultimoAtaque">{{ sv.ultimoAtaque.timestamp | date:'HH:mm:ss' }}</span>
       </div>
     </div>
-  </section>
+  </main>
 
-  <!-- Historial -->
-  <section class="historial">
-    <h3>Historial de ataques</h3>
-    <div class="tabla-wrapper">
-      <table>
-        <thead>
-          <tr>
-            <th>Hora</th>
-            <th>Tipo</th>
-            <th>Severidad</th>
-            <th>IP</th>
-            <th>Endpoint</th>
-            <th>Payload</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let a of ataques" class="fila" [class]="severidadClase(a.severidad)">
-            <td>{{ a.timestamp | date:'HH:mm:ss' }}</td>
-            <td>{{ tipoEtiqueta(a.tipo) }}</td>
-            <td><span class="badge" [class]="severidadClase(a.severidad)">{{ a.severidad }}</span></td>
-            <td>{{ a.ip }}</td>
-            <td>{{ a.endpoint }}</td>
-            <td><code>{{ a.payload.slice(0, 40) }}{{ a.payload.length > 40 ? '…' : '' }}</code></td>
-          </tr>
-        </tbody>
-      </table>
+  <!-- Timeline y controles -->
+  <section class="inferior">
+    <div class="timeline">
+      <h3 class="section-title">ULTIMOS ATAQUES</h3>
+      <div class="timeline-list">
+        <div *ngFor="let a of timeline; let i = index" class="timeline-item" [class]="'severidad-' + a.severidad.toLowerCase()">
+          <span class="tl-time">{{ a.timestamp | date:'HH:mm:ss' }}</span>
+          <span class="tl-tipo">{{ tipoEtiqueta(a.tipo) }}</span>
+          <span class="tl-severidad" [class]="'sev-' + a.severidad.toLowerCase()">{{ a.severidad }}</span>
+          <span class="tl-ip">{{ a.ip }}</span>
+          <span class="tl-endpoint">{{ a.endpoint }}</span>
+        </div>
+        <div *ngIf="timeline.length === 0" class="timeline-empty">Esperando ataques...</div>
+      </div>
+    </div>
+
+    <div class="panel-derecho">
+      <div class="severidad-box">
+        <h3 class="section-title">RESUMEN</h3>
+        <div class="severidad-stats">
+          <div class="sev-row critica">
+            <span class="sev-label">CRITICA</span>
+            <span class="sev-count">{{ contarPorSeveridad().critica }}</span>
+          </div>
+          <div class="sev-row alta">
+            <span class="sev-label">ALTA</span>
+            <span class="sev-count">{{ contarPorSeveridad().alta }}</span>
+          </div>
+          <div class="sev-row media">
+            <span class="sev-label">MEDIA</span>
+            <span class="sev-count">{{ contarPorSeveridad().media }}</span>
+          </div>
+          <div class="sev-row baja">
+            <span class="sev-label">BAJA</span>
+            <span class="sev-count">{{ contarPorSeveridad().baja }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="simular-box">
+        <h3 class="section-title">SIMULAR ATAQUE</h3>
+        <div class="simular-botones">
+          <button (click)="simular('sql')" class="btn-sim">SQLi</button>
+          <button (click)="simular('xss')" class="btn-sim">XSS</button>
+          <button (click)="simular('brute')" class="btn-sim">BRUTE</button>
+          <button (click)="simular('noauth')" class="btn-sim">NOAUTH</button>
+          <button (click)="simular('otro')" class="btn-sim">OTRO</button>
+        </div>
+      </div>
     </div>
   </section>
 </div>

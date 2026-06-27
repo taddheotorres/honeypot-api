@@ -1,12 +1,12 @@
 import { Component, OnInit } from '@angular/core';
-import { NgIf, NgFor, DatePipe } from '@angular/common';
+import { NgIf, NgFor } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AtaqueService } from '../../servicios/ataque.service';
 
 @Component({
   selector: 'app-diagnostico',
   standalone: true,
-  imports: [NgIf, NgFor, DatePipe, RouterLink],
+  imports: [NgIf, NgFor, RouterLink],
   template: `
     <div class="contenedor">
       <header>
